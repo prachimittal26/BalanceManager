@@ -1,62 +1,32 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.18;
 
-contract BalanceManager {
-    mapping(address => uint256) private balances;
-    address public owner;
+contract ValidationAndErrorContract {
+    uint256 public totalFunds;
 
     constructor() {
-        owner = msg.sender;
+        totalFunds = 0;
     }
 
-    // Modifier to restrict access to the owner
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Caller is not the owner");
-        _;
+    function addFunds(uint256 amount) external {
+        require(amount > 0, "The amount to be added must be greater than zero");
+        totalFunds += amount;
     }
 
-    // Function to deposit funds
-    function deposit() public payable {
-        require(msg.value > 0, "Deposit amount must be greater than zero");
-        balances[msg.sender] += msg.value;
-    }
-
-    // Function to withdraw funds
-    function withdraw(uint256 amount) public {
-        require(amount <= balances[msg.sender], "Insufficient balance");
-        balances[msg.sender] -= amount;
-        payable(msg.sender).transfer(amount);
-    }
-
-    // Function to transfer ownership
-    function transferOwnership(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "New owner is the zero address");
-        owner = newOwner;
-    }
-
-    // Function to get the balance of an account
-    function getBalance(address account) public view returns (uint256) {
-        return balances[account];
-    }
-
-    // Example of using assert()
-    function checkBalance(address account) public view {
-        uint256 balance = balances[account];
-        assert(balance >= 0); // This should always be true
-    }
-
-    // Example of using revert()
-    function emergencyWithdraw() public onlyOwner {
-        uint256 contractBalance = address(this).balance;
-        require(contractBalance > 0, "Contract balance is zero");
+    function takeFunds(uint256 amount) external {
+        require(amount > 0, "The amount to be taken out must be greater than zero");
         
-        // Transfer the contract balance to the owner
-        (bool success, ) = owner.call{value: contractBalance}("");
-        if (!success) {
-            revert("Emergency withdrawal failed");
+        bool fundsSufficient = amount <= totalFunds;
+        
+        if (!fundsSufficient) {
+            revert("Insufficient balance in the contract."); // revert statement
+        } else {
+            totalFunds -= amount;
         }
-        
-        // Ensure the contract balance is zero after withdrawal
-        assert(address(this).balance == 0);
+    }
+
+    function getFunds() external view returns (uint256) {
+        assert(totalFunds >= 0); // assert statement
+        return totalFunds;
     }
 }
